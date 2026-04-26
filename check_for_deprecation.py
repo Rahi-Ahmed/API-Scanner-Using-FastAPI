@@ -13,10 +13,22 @@ _DOC_DEPRECATION_PATTERNS = (
     re.compile(r"(?:^|\n)\s*deprecated\b[\s.,:;\-]", re.IGNORECASE),
 )
 
-# Decorator names like `deprecated`, `_deprecated`, `mypkg.deprecated`,
-# `deprecated_alias`. Preceded only by start-of-string, `.`, or `_` so that
-# `undeprecated` / `notdeprecated` are not matched.
-_DECORATOR_DEPRECATION_RE = re.compile(r"(?:^|[._])deprecated", re.IGNORECASE)
+# Decorator / wrapper names like `deprecated`, `_deprecated`,
+# `mypkg.deprecated`, `_deprecated_function_alias`, `_deprecate`.
+# Preceded only by start-of-string, `.`, or `_` so that `undeprecated`
+# and `notdeprecated` are NOT matched.
+_DECORATOR_DEPRECATION_RE = re.compile(r"(?:^|[._])deprecat", re.IGNORECASE)
+
+
+def is_deprecation_wrapper_name(name: str) -> bool:
+    """True if `name` looks like a deprecation decorator/wrapper.
+
+    Used both for `@deprecated`-style decorators and for class-body alias
+    assignments like `findAll = _deprecated_function_alias(...)`.
+    """
+    if not name:
+        return False
+    return bool(_DECORATOR_DEPRECATION_RE.search(name))
 
 _WARNING_TYPES = frozenset({
     "DeprecationWarning",
@@ -41,7 +53,7 @@ def _doc_indicates_deprecation(doc):
 
 
 def _decorators_indicate_deprecation(decorators):
-    return any(_DECORATOR_DEPRECATION_RE.search(d) for d in decorators)
+    return any(is_deprecation_wrapper_name(d) for d in decorators)
 
 
 def _is_warnings_warn_call(call):

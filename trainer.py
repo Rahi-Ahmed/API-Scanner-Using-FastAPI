@@ -17,7 +17,7 @@ def train_on_library(library_path: str, base_module_name: str) -> dict:
                 continue
 
             filepath = os.path.join(root, file)
-            print(f"  -> Parsing {file}...")
+            logger.info("  -> Parsing %s", file)
 
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
@@ -51,6 +51,7 @@ def train_on_library(library_path: str, base_module_name: str) -> dict:
             file_deprecations = extract_deprecations(
                 cv.class_map, combined_funcs, combined_decs
             )
+            file_deprecations.update(cv.alias_map)
             master_knowledge.update(file_deprecations)
 
     return master_knowledge
