@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Scanner</title>
+    <style>
+        :root {
+            --bg-color: #f0fdf4;
+            --card-bg: #ffffff;
+            --primary: #86efac;
+            --primary-dark: #4ade80;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #d1d5db;
+            --danger: #fca5a5;
+            --danger-dark: #f87171;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #166534;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid #e5e7eb;
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #166534;
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            background: #f9fafb;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #14532d;
+            background-color: var(--primary);
+        }
+
+        button:hover { background-color: var(--primary-dark); }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: #7f1d1d;
+            width: auto;
+            display: block;
+            margin: 2rem auto 0;
+        }
+        .btn-danger:hover { background-color: var(--danger-dark); }
+
+        .results-section {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid #e5e7eb;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef08a; color: #854d0e; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f9fafb;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #b91c1c;
+        }
+
+        .system-message {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>API Scanner</h1>
+            <p>Automated detection of deprecated APIs in your Python code.</p>
+        </header>
+
+        <div class="grid">
+            <section class="card">
+                <h2>1. Train Library</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Upload a .zip of a library's source code to build the knowledge base.</p>
+                <form id="trainForm">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="libraryZip" accept=".zip" required>
+                    </div>
+                    <button type="submit" id="trainBtn">Process Library</button>
+                </form>
+            </section>
+
+            <section class="card">
+                <h2>2. Analyze Script</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Upload your .py script to scan for deprecated methods.</p>
+                <form id="analyzeForm">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="scriptFile" accept=".py" required>
+                    </div>
+                    <button type="submit" id="analyzeBtn">Scan Code</button>
+                </form>
+            </section>
+        </div>
+
+        <section class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2 id="resultsTitle">Analysis Results</h2>
+                <span id="statusBadge" class="status-badge"></span>
+            </div>
+            <div id="resultsContent"></div>
+        </section>
+
+        <button class="btn-danger" id="resetBtn">Reset Knowledge Base</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        const trainForm = document.getElementById('trainForm');
+        const analyzeForm = document.getElementById('analyzeForm');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContent = document.getElementById('resultsContent');
+        const statusBadge = document.getElementById('statusBadge');
+        const resultsTitle = document.getElementById('resultsTitle');
+
+        function showResults(title, badgeClass, badgeText, htmlContent) {
+            resultsSection.style.display = 'block';
+            resultsTitle.textContent = title;
+            statusBadge.className = `status-badge ${badgeClass}`;
+            statusBadge.textContent = badgeText;
+            resultsContent.innerHTML = htmlContent;
+        }
+
+        trainForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('trainBtn');
+            const fileInput = document.getElementById('libraryZip');
+            
+            btn.disabled = true;
+            btn.textContent = "Processing...";
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/train`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResults(
+                        'Training Complete', 
+                        'badge-success', 
+                        'Success', 
+                        `<p class="system-message">Successfully parsed <strong>${data.library}</strong>.</p>
+                         <p class="system-message">Found ${data.new_deprecations_found} new deprecations. Total knowledge base size is now ${data.total_knowledge_base_size}.</p>`
+                    );
+                    fileInput.value = ''; 
+                } else {
+                    throw new Error(data.detail || "Upload failed");
+                }
+            } catch (error) {
+                showResults('Error', 'badge-error', 'Failed', `<p class="system-message">Connection error: ${error.message}</p>`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Process Library";
+            }
+        });
+
+        analyzeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('analyzeBtn');
+            const fileInput = document.getElementById('scriptFile');
+            
+            btn.disabled = true;
+            btn.textContent = "Scanning...";
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.status === 'warning') {
+                        showResults('Warning', 'badge-warning', 'No Knowledge', `<p class="system-message">${data.message}</p>`);
+                        return;
+                    }
+
+                    if (data.issues_found === 0) {
+                        showResults(
+                            `Scan: ${data.script}`, 
+                            'badge-success', 
+                            'Clean', 
+                            `<p class="system-message">No deprecated APIs found. Your code is clean!</p>`
+                        );
+                    } else {
+                        let tableHTML = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Line</th>
+                                        <th>Called API</th>
+                                        <th>Source Library</th>
+                                        <th>Warning / Evidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        data.findings.forEach(issue => {
+                            tableHTML += `
+                                <tr>
+                                    <td><strong>${issue.line}</strong></td>
+                                    <td><code>${issue.called}</code><br><small style="color:var(--text-muted)">Resolved: ${issue.resolved}</small></td>
+                                    <td>
+                                        <span style="background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">
+                                            ${issue.library}
+                                        </span>
+                                    </td>
+                                    <td>${issue.warning}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        tableHTML += `</tbody></table>`;
+                        showResults(`Scan: ${data.script}`, 'badge-error', `${data.issues_found} Issues`, tableHTML);
+                    }
+                    fileInput.value = '';
+                } else {
+                    throw new Error(data.detail || "Analysis failed");
+                }
+            } catch (error) {
+                showResults('Error', 'badge-error', 'Failed', `<p class="system-message">Connection error: ${error.message}</p>`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Scan Code";
+            }
+        });
+
+        resetBtn.addEventListener('click', async () => {
+            if(!confirm("Are you sure you want to clear the entire knowledge base?")) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/reset`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResults('Reset Complete', 'badge-success', 'Cleared', `<p class="system-message">${data.message}</p>`);
+                }
+            } catch (error) {
+                alert("Failed to reset the engine. Ensure the server is running.");
+            }
+        });
+    </script>
+</body>
+</html>

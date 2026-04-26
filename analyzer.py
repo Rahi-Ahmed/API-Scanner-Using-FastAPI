@@ -170,6 +170,7 @@ def analyze_script(script_path: str, knowledge_base: dict) -> list:
                     "called": call["name"],
                     "resolved": qualified or call["name"],
                     "deprecated_api": dep_key,
+                    "library": dep_key.split(".")[0],  # <-- NEW: Extract root library name
                     "warning": warning,
                 })
                 break
