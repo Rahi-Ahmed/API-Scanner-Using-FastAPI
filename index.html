@@ -171,6 +171,8 @@
             font-family: monospace;
             font-size: 0.9em;
             color: #b91c1c;
+            word-wrap: break-word;
+            word-break: break-word;
         }
 
         .system-message {
@@ -182,6 +184,60 @@
 
         @media (max-width: 768px) {
             .grid { grid-template-columns: 1fr; }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5); 
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto; 
+            padding: 2rem;
+            border: 1px solid #e5e7eb;
+            width: 80%; 
+            max-width: 800px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn-expand {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .btn-expand:hover {
+            background-color: #bae6fd;
         }
     </style>
 </head>
@@ -217,6 +273,13 @@
             </section>
         </div>
 
+        <section class="card" id="knowledgeBaseSection" style="margin-bottom: 2rem; display: none;">
+            <h2>Analyzed Libraries (Knowledge Base)</h2>
+            <div id="kbContent">
+                <p class="system-message">Loading...</p>
+            </div>
+        </section>
+
         <section class="results-section" id="resultsSection">
             <div class="results-header">
                 <h2 id="resultsTitle">Analysis Results</h2>
@@ -226,6 +289,15 @@
         </section>
 
         <button class="btn-danger" id="resetBtn">Reset Knowledge Base</button>
+    </div>
+
+    <!-- The Modal -->
+    <div id="kbModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modalTitle" style="margin-bottom: 1rem; color: #166534;">Library Deprecations</h2>
+            <div id="modalTableContent"></div>
+        </div>
     </div>
 
     <script>
@@ -238,6 +310,104 @@
         const resultsContent = document.getElementById('resultsContent');
         const statusBadge = document.getElementById('statusBadge');
         const resultsTitle = document.getElementById('resultsTitle');
+
+        const kbSection = document.getElementById('knowledgeBaseSection');
+        const kbContent = document.getElementById('kbContent');
+        const kbModal = document.getElementById('kbModal');
+        const closeModalBtn = document.querySelector('.close-modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalTableContent = document.getElementById('modalTableContent');
+        let currentKnowledgeBase = [];
+
+        async function fetchKnowledgeBase() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/knowledge_base`);
+                if (response.ok) {
+                    const data = await response.json();
+                    currentKnowledgeBase = data.libraries;
+                    renderKnowledgeBase();
+                }
+            } catch (error) {
+                console.error("Failed to fetch knowledge base", error);
+            }
+        }
+
+        function renderKnowledgeBase() {
+            if (!currentKnowledgeBase || currentKnowledgeBase.length === 0) {
+                kbSection.style.display = 'none';
+                return;
+            }
+            kbSection.style.display = 'block';
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Library Name</th>
+                            <th>Deprecations Found</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            currentKnowledgeBase.forEach((lib, index) => {
+                html += `
+                    <tr>
+                        <td><strong>${lib.name}</strong></td>
+                        <td><span class="status-badge badge-warning">${lib.deprecations.length} APIs</span></td>
+                        <td><button type="button" class="btn-expand" onclick="openModal(${index})">Expand</button></td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table>`;
+            kbContent.innerHTML = html;
+        }
+
+        function openModal(index) {
+            const lib = currentKnowledgeBase[index];
+            modalTitle.textContent = `Deprecations in ${lib.name}`;
+            
+            let html = `
+                <div style="overflow-x: auto; max-height: 60vh; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Deprecation</th>
+                                <th>Detection Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            lib.deprecations.forEach((dep, idx) => {
+                html += `
+                    <tr>
+                        <td><strong>${idx + 1}</strong></td>
+                        <td><code>${dep.api}</code></td>
+                        <td>${dep.warning}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            modalTableContent.innerHTML = html;
+            kbModal.style.display = 'block';
+        }
+
+        closeModalBtn.onclick = function() {
+            kbModal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == kbModal) {
+                kbModal.style.display = 'none';
+            }
+        }
+
+        fetchKnowledgeBase();
 
         function showResults(title, badgeClass, badgeText, htmlContent) {
             resultsSection.style.display = 'block';
@@ -274,6 +444,7 @@
                          <p class="system-message">Found ${data.new_deprecations_found} new deprecations. Total knowledge base size is now ${data.total_knowledge_base_size}.</p>`
                     );
                     fileInput.value = ''; 
+                    fetchKnowledgeBase();
                 } else {
                     throw new Error(data.detail || "Upload failed");
                 }
@@ -369,6 +540,7 @@
                 
                 if (response.ok) {
                     showResults('Reset Complete', 'badge-success', 'Cleared', `<p class="system-message">${data.message}</p>`);
+                    fetchKnowledgeBase();
                 }
             } catch (error) {
                 alert("Failed to reset the engine. Ensure the server is running.");

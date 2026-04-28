@@ -110,6 +110,21 @@ async def analyze(file: UploadFile = File(...)):
         if os.path.exists(script_path):
             os.remove(script_path)
 
+@app.get("/knowledge_base", summary="Get current knowledge base")
+async def get_knowledge_base():
+    """Returns the knowledge base grouped by library name."""
+    kb = load_knowledge_base()
+    grouped = {}
+    for key, warning in kb.items():
+        lib = key.split('.')[0]
+        if lib not in grouped:
+            grouped[lib] = []
+        grouped[lib].append({"api": key, "warning": warning})
+    
+    libraries = [{"name": lib, "deprecations": deps} for lib, deps in grouped.items()]
+    libraries.sort(key=lambda x: x["name"])
+    return {"status": "success", "libraries": libraries}
+
 @app.post("/reset", summary="Clear the knowledge base")
 async def reset():
     """Deletes all training data and empties the knowledge base."""
