@@ -13,15 +13,19 @@ def _flatten_attr(node):
 
 
 class FuncVisitor(ast.NodeVisitor):
-    def __init__(self, base_name):
+    def __init__(self, base_name, skip_classes=False):
         self.base_name = base_name
         self.func_map = {}
         self.func_decorators = {}
+        self.skip_classes = skip_classes
 
     def flatten_attr(self, node):
         return _flatten_attr(node)
 
     def generic_visit(self, node):
+        if isinstance(node, ast.ClassDef) and self.skip_classes:
+            return
+
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             func_name = f"{self.base_name}.{node.name}" if self.base_name else node.name
             self.func_map[func_name] = node
@@ -48,9 +52,6 @@ class ClassVisitor(ast.NodeVisitor):
         self.class_map = {}
         self.func_map = {}
         self.func_decorators = {}
-        # Class-body assignments that bind a name to a deprecation-wrapper
-        # call, e.g. `findAll = _deprecated_function_alias("findAll", ...)`.
-        # qualified_name -> human-readable reason.
         self.alias_map = {}
 
     def generic_visit(self, node):
