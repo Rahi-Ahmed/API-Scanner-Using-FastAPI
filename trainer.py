@@ -42,7 +42,7 @@ def train_on_library(library_path: str, base_module_name: str) -> dict:
             cv = ClassVisitor(full_module_name)
             cv.visit(tree)
 
-            fv = FuncVisitor(full_module_name)
+            fv = FuncVisitor(full_module_name, skip_classes=True)
             fv.visit(tree)
 
             combined_funcs = {**cv.func_map, **fv.func_map}
@@ -53,5 +53,16 @@ def train_on_library(library_path: str, base_module_name: str) -> dict:
             )
             file_deprecations.update(cv.alias_map)
             master_knowledge.update(file_deprecations)
+
+    # Remove entries whose function name or containing module/class name contains "deprecat". 
+    def _is_deprecation_helper(key: str) -> bool:
+        parts = key.lower().split(".")
+        return any("deprecat" in p for p in parts[-2:])
+
+    master_knowledge = {
+        key: value
+        for key, value in master_knowledge.items()
+        if not _is_deprecation_helper(key)
+    }
 
     return master_knowledge

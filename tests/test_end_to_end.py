@@ -22,7 +22,7 @@ from analyzer import analyze_script
 
 def test_bs4_kb_is_substantive(bs4_knowledge: dict):
     """bs4 has a long history of deprecations; the KB should be sizeable."""
-    assert len(bs4_knowledge) > 50
+    assert len(bs4_knowledge) > 40
 
 
 @pytest.mark.parametrize(
